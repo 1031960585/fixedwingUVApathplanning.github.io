@@ -1,0 +1,12 @@
+<launch>
+    <arg name="namespace" default=""/>
+    <arg name="firmware" default="px4"/>
+    <node pkg="path_hd" type="send_path" name="send_path" output="screen">
+        <param name="ns" value="$(arg namespace)"/>
+        <param name="firmware" value="$(arg firmware)"/>
+    </node>
+    <node pkg="path_hd" type="goal_offset" name="goal_offset" output="screen" />
+    <!-- <node pkg="path_hd" type="trajectory_desired" name="trajectory_desired"  output="screen">
+        <param name="ns" value="$(arg namespace)"/>
+    </node> -->
+</launch>

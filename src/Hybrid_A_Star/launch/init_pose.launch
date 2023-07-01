@@ -1,0 +1,24 @@
+<launch>
+    <arg name="namespace" default=""/>
+    <!-- <node pkg="init_pose_hd" type="base2map.py" name="base2map" output="screen"/> -->
+    <node pkg="init_pose_hd" type="gps_2_init_pose" name="gps_2_init_pose"  output="log">
+        <param name="ns" value="$(arg namespace)"/>
+    </node>
+    <node pkg="init_pose_hd" type="pub_home" name="pub_home"  output="log">
+        <param name="ns" value="$(arg namespace)"/>
+    </node>
+
+    <node name="gps_2_UTM" pkg="gps_common" type="utm_odometry_node">
+        <remap from="odom" to="/UTM_position"/>
+        <remap from="fix" to="$(arg namespace)/mavros/global_position/global" />
+        <!-- <param name="rot_covariance" value="99999" />
+        <param name="frame_id" value="base_link" />
+        <param name="child_frame_id" value="base_link" /> -->
+    </node>
+    <node name="home_2_UTM" pkg="gps_common" type="utm_odometry_node">
+        <remap from="odom" to="/UTM_position/home"/>
+        <remap from="fix" to="/home_position/home" />
+    </node>
+
+
+</launch>

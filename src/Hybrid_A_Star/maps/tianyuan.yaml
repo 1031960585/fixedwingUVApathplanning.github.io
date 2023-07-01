@@ -1,0 +1,20 @@
+# 包含占用数据的图像文件的路径; 可以是绝对的，或相对于YAML文件的位置
+image: tianyuan3_shrink.pgm
+# 地图的分辨率，米/像素
+resolution: 1
+# resolution: 0.82
+# 地图中左下像素的2-D姿态为（x，y，yaw），偏航为逆时针旋转（yaw = 0表示无旋转）。系统的许多部分目前忽略偏航。
+# origin: [-726.0, -460.0, 0.0]
+# origin: [-347.0, -182.0, 0.0]
+# shrink
+origin: [-284.0, -149.0, 0.0]
+# origin: [0.0, 0.0, 0.0]
+# 白/黑自由/占用语义是否应该被反转（阈值的解释不受影响）
+negate: 0
+# 占据概率大于该阈值的像素被认为完全占用。
+occupied_thresh: 0.1
+# occupied_thresh: 0.65
+# 占有概率小于该阈值的像素被认为是完全自由的。
+free_thresh: 0.05
+# free_thresh: 0.196
+
