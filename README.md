@@ -1,5 +1,7 @@
 **本镜像实现的是固定翼无人机的路径规划功能，基于[XTDrone](https://www.yuque.com/xtdrone/manual_cn "XTDrone")框架,在已知全局地图情况下使用[混合A*算法](https://github.com/zm0612/Hybrid_A_Star "混合A*算法")完成路径规划,发送至[Autopilot开源飞控系统](https://px4.io/ "Autopilot")执行。**
 
+<!-- **视频演示：** -->
+
 ## 使用Docker部署仿真环境
 
 由于仿真环境的配置需要安装很多库，对于新手不太友好，因此提供了Docker镜像(此镜像基于xtdrne:1.3镜像，环境部署见[这里](https://www.yuque.com/xtdrone/manual_cn/docker "xtdrone镜像部署"))，便于使用。
@@ -12,13 +14,13 @@
 >
 >2、WSL本身并不支持连接 USB 设备，不能调用部分外设，因此你需要安装开源 usbipd-win 项目。详见[连接USB设备](https://learn.microsoft.com/zh-cn/windows/wsl/connect-usb "连接USB设备")
 
-#### 下载镜像，导入镜像(链接：[](),密码：)
+<!-- #### 下载镜像，导入镜像(链接：[](),密码：)
 
 ```
 sudo docker load -i xtdrone_1_3.rar
-```
+``` -->
 
-#### 查看看镜像
+#### 查看镜像
 
 ```
 sudo docker image ls
@@ -26,24 +28,45 @@ sudo docker image ls
 
 ## 启动镜像
 
-### 仿真环境
-
 #### 本地更改X11 server访问控制。显示图形界面
 
 linux目前的主流图像界面服务X11又支持客户端/服务端（Client/Server）的工作模式
 
-![Client-Server-Model](./img/v2-e6599c7d8ce1809f45d8fa6c75f07fdd_r.jpg)
+![Client-Server-Model](https://1031960585.github.io/fixedwingUVApathplanning.github.io/img/v2-e6599c7d8ce1809f45d8fa6c75f07fdd_r.jpg)
 
 ```
 xhost +
 ```
+
+### 仿真环境
+
 #### 启动镜像
 ```
-sudo docker run --runtime=nvidia --rm -it -v /tmp/.X11-unix:/tmp/.X11-unix -e DISPLAY -e XAUTHORITY -e NVIDIA_DRIVER_CAPABILITIES=all xtdrone/ssh:1.3
+sudo docker run --runtime=nvidia --rm -it -v /tmp/.X11-unix:/tmp/.X11-unix -e DISPLAY -e XAUTHORITY -e NVIDIA_DRIVER_CAPABILITIES=all xtdrone/pathplanning:1.3
 ```
 > -v /tmp/.x11-unix:/tmp/.x11-unix #共享本地unix端口 共享本地套接字通信
 > 
-> -e DISPLAY=unix$DISPLAY #修改环境变量DISPLAY
+> -e DISPLAY #修改环境变量DISPLAY
+
+#### 连接到宿主机地面站
+
+![SITL 模拟环境](https://1031960585.github.io/fixedwingUVApathplanning.github.io/img/px4_sitl_overview.d5d197f2.svg "SITL 模拟环境")
+
+SITL应该连接到宿主机的14550端口。
+
+在PX4_Firmware/ROMFS/px4fmu_common/init.d-posix/下有名为rcS的文件，文件中为bash命令，飞控程序会在启动时执行它，包括设置参数、初始化、mavlink设置等等。详情见[系统启动](https://docs.px4.io/main/zh/concept/system_startup.html "系统启动")。
+
+```
+mavlink start -x -u $udp_gcs_port_local -r 4000000 # 添加 -t 主机ip地址
+
+mavlink start -x -t 172.17.0.1 -u $udp_gcs_port_local -r 4000000
+```
+
+QGroundControl设置，连接到SITL环境的18570端口。
+
+![QGC设置](https://1031960585.github.io/fixedwingUVApathplanning.github.io/img/截图%202023-07-29%2000-26-27.png "QGC设置")
+
+SITL仿真就可以连接到地面站了。
 
 #### 启动仿真程序
 ```
@@ -77,6 +100,14 @@ roslaunch hybrid_a_star path_hd.launch namespace:=/plane_0
 ```
 
 ### 实际飞行
+
+启动镜像
+```
+sudo docker run --runtime=nvidia --rm -it -v /tmp/.X11-unix:/tmp/.X11-unix -e DISPLAY -e XAUTHORITY -e NVIDIA_DRIVER_CAPABILITIES=all xtdrone/ssh:1.3
+```
+> -v /tmp/.x11-unix:/tmp/.x11-unix #共享本地unix端口 共享本地套接字通信
+> 
+> -e DISPLAY #修改环境变量DISPLAY
 
 启动mavros连接到飞控
 
@@ -163,46 +194,20 @@ service ssh start
 ssh root@172.17.0.2 -p 9000
 ```
 
-## 启动容器
+### 更改仿真世界原点的GPS
+
+在~/.bashrc文件末尾添加
 ```
-sudo docker run --runtime=nvidia --rm -it -v /tmp/.X11-unix:/tmp/.X11-unix -v /home/lvrunze/docker_need/PX4_Firmware:/root/PX4_Firmware -v /home/lvrunze/docker_need/hybrid_a_star_ws:/root/hybrid_a_star_ws -p 14550:14550 -e DISPLAY -e XAUTHORITY -e NVIDIA_DRIVER_CAPABILITIES=all xtdrone/ssh:1.3
+export PX4_HOME_LAT=39.54444
+export PX4_HOME_LON=117.38864
+export PX4_HOME_ALT=0
 ```
-
-
-## 连接到宿主机GCS
-
-![SITL 模拟环境](./img/px4_sitl_overview.d5d197f2.svg "SITL 模拟环境")
-
-SITL应该连接到宿主机的14550端口。
-
-在PX4_Firmware/ROMFS/px4fmu_common/init.d-posix/下有名为rcS的文件，文件中为bash命令，飞控程序会在启动时执行它，包括设置参数、初始化、mavlink设置等等。详情见[系统启动](https://docs.px4.io/main/zh/concept/system_startup.html "系统启动")。
-
-```
-mavlink start -x -u $udp_gcs_port_local -r 4000000 # 添加 -t 主机ip地址
-
-mavlink start -x -t 172.17.0.1 -u $udp_gcs_port_local -r 4000000
-```
-
-QGroundControl设置，连接到SITL环境的18570端口。
-
-![QGC设置](./img/截图%202023-07-29%2000-26-27.png "QGC设置")
-
-SITL仿真就可以连接到地面站了。
+> 镜像中的原点是北京科技大学天津学院14斋的位置
 
 ## 混合A*算法依赖安装
+
+>镜像里已经安装了
 
 ```
 sudo apt-get install ros-melodic-costmap-* ros-melodic-map-server ros-melodic-tf ros-melodic-tf2-geometry-msgs libgoogle-glog-dev ros-melodic-gps-umd
 ```
-
-
-
-
-
-
-
-## 启动固定翼路径规划仿真
-
-
-
-
